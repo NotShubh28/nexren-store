@@ -1083,11 +1083,12 @@ html, body {
   z-index: 10;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0 0 60px 0;
+  padding: 0 0 50px 0;
   pointer-events: auto;
   user-select: none;
 }
@@ -1096,6 +1097,7 @@ html, body {
 .bounce-cards-container {
   position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
@@ -1118,16 +1120,19 @@ html, body {
   background: var(--bounce-cards-border-color);
   box-shadow: var(--bounce-cards-shadow);
   transform: translate(-50%, -50%) scale(0);
-  transition: box-shadow 0.3s ease;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
   will-change: transform;
 }
 
 .bounce-cards__card[data-active] {
+  border-color: #38bdf8;
   box-shadow: var(--bounce-cards-shadow-active);
 }
 
 .bounce-cards__card--clickable {
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .bounce-cards__card--clickable:focus-visible {
@@ -1144,21 +1149,37 @@ html, body {
   user-select: none;
 }
 
-.bounce-card-badge {
-  position: absolute;
-  bottom: 12px;
-  left: 12px;
-  right: 12px;
-  background: rgba(15, 23, 42, 0.82);
-  backdrop-filter: blur(8px);
-  padding: 6px 10px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #fff;
-  font-size: 0.82rem;
-  font-weight: 600;
-  text-align: center;
-  pointer-events: none;
+/* Indicators / Dots for Carousel Switching */
+.bounce-cards-indicators {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  z-index: 15;
+}
+
+.bounce-cards-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.3s ease, box-shadow 0.3s ease;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bounce-cards-dot:hover {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.bounce-cards-dot--active {
+  width: 22px;
+  background: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
 }
 
 /* App Detail Modal */
@@ -1294,16 +1315,6 @@ html, body {
   overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
-}
-
-.app-modal-rating {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #fbbf24;
-  background: rgba(251, 191, 36, 0.1);
-  padding: 4px 10px;
-  border-radius: 8px;
-  border: 1px solid rgba(251, 191, 36, 0.25);
 }
 
 .app-modal-desc {
@@ -2331,5 +2342,22 @@ html, body {
   align-items: center;
   gap: 10px;
 }
+
+@media (max-width: 768px) {
+  .apps-showcase {
+    padding: 0 0 70px 0;
+  }
+  .specular-btn-container {
+    margin-top: 22px;
+  }
+  .specular-button--lg {
+    padding: 12px 24px;
+    font-size: 0.92rem;
+  }
+  .bounce-cards-indicators {
+    margin-top: 12px;
+  }
+}
+
 
 

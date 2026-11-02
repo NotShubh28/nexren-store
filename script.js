@@ -1893,7 +1893,6 @@ void main() {
       name: 'Nexren',
       category: 'Running & GPS Tracker',
       author: 'by Shobhit Pandey',
-      rating: '★ 4.9',
       version: 'v1.0.0',
       size: '34 MB',
       downloads: '38.5k',
@@ -1912,7 +1911,6 @@ void main() {
       name: 'StreaX',
       category: 'Habit & Daily Tracker',
       author: 'by Shobhit Pandey',
-      rating: '★ 4.9',
       version: 'v1.4.0',
       size: '28 MB',
       downloads: '14.2k',
@@ -1931,7 +1929,6 @@ void main() {
       name: 'Arc',
       category: 'Study & Productivity',
       author: 'by Shobhit Pandey',
-      rating: '★ 5.0',
       version: 'v2.1.0',
       size: '42 MB',
       downloads: '26.8k',
@@ -1953,60 +1950,117 @@ void main() {
   function createBounceCards(container, options = {}) {
     const {
       images = [],
-      containerWidth = 520,
-      containerHeight = 290,
-      cardSize = 230,
-      spread = 130,
       rotation = 8,
       arc = 10,
       animationDelay = 0.3,
       animationStagger = 0.08,
       bounciness = 0.65,
-      enableHover = true,
-      pushDistance = 150,
-      hoverScale = 1.08,
-      borderWidth = 4,
       borderColor = '#1e293b',
-      radius = 24,
       shadow = true,
-      onCardClick
+      onCardClick,
+      onActiveChange
     } = options;
+
+    function getResponsiveConfig() {
+      const w = window.innerWidth;
+      if (w < 400) {
+        // Small Mobile
+        return {
+          cardSize: 120,
+          spread: 58,
+          pushDistance: 44,
+          containerWidth: Math.min(w - 20, 280),
+          containerHeight: 155,
+          radius: 16,
+          borderWidth: 2.5,
+          hoverScale: 1.06
+        };
+      } else if (w < 600) {
+        // Standard Mobile
+        return {
+          cardSize: 135,
+          spread: 66,
+          pushDistance: 50,
+          containerWidth: Math.min(w - 28, 320),
+          containerHeight: 170,
+          radius: 18,
+          borderWidth: 3,
+          hoverScale: 1.07
+        };
+      } else if (w < 900) {
+        // Tablet
+        return {
+          cardSize: 155,
+          spread: 82,
+          pushDistance: 75,
+          containerWidth: 380,
+          containerHeight: 200,
+          radius: 20,
+          borderWidth: 3,
+          hoverScale: 1.08
+        };
+      } else {
+        // Desktop (refined down from old 230 to 180)
+        return {
+          cardSize: 180,
+          spread: 105,
+          pushDistance: 105,
+          containerWidth: 460,
+          containerHeight: 235,
+          radius: 22,
+          borderWidth: 3.5,
+          hoverScale: 1.08
+        };
+      }
+    }
+
+    let currentConfig = getResponsiveConfig();
 
     const root = document.createElement('div');
     root.className = 'bounce-cards';
-    root.style.width = `${containerWidth}px`;
-    root.style.height = `${containerHeight}px`;
-    root.style.setProperty('--bounce-cards-size', `${cardSize}px`);
-    root.style.setProperty('--bounce-cards-border', `${borderWidth}px`);
-    root.style.setProperty('--bounce-cards-border-color', borderColor);
-    root.style.setProperty('--bounce-cards-radius', `${radius}px`);
+
+    const applyResponsiveStyles = () => {
+      root.style.width = `${currentConfig.containerWidth}px`;
+      root.style.height = `${currentConfig.containerHeight}px`;
+      root.style.setProperty('--bounce-cards-size', `${currentConfig.cardSize}px`);
+      root.style.setProperty('--bounce-cards-border', `${currentConfig.borderWidth}px`);
+      root.style.setProperty('--bounce-cards-border-color', borderColor);
+      root.style.setProperty('--bounce-cards-radius', `${currentConfig.radius}px`);
+    };
+    applyResponsiveStyles();
+
     root.style.setProperty(
       '--bounce-cards-shadow',
       shadow ? '0 10px 30px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08)' : 'none'
     );
     root.style.setProperty(
       '--bounce-cards-shadow-active',
-      shadow ? '0 25px 50px -12px rgba(56, 189, 248, 0.35), 0 0 0 2px #38bdf8' : 'none'
+      shadow ? '0 25px 50px -12px rgba(56, 189, 248, 0.38), 0 0 0 2px #38bdf8' : 'none'
     );
 
     const count = images.length;
     const middle = (count - 1) / 2;
     const reach = Math.max(1, middle);
 
-    const slots = images.map((_, i) => {
-      // 3 Apps fan layout: index 0 (Nexren) front & center, index 1 (StreaX) left, index 2 (Arc) right
-      if (count === 3) {
-        if (i === 0) return { x: 0, y: 0, rotate: 0 };
-        if (i === 1) return { x: -spread, y: arc, rotate: -rotation };
-        if (i === 2) return { x: spread, y: arc, rotate: rotation };
-      }
-      const offset = i - middle;
-      return {
-        x: offset * spread,
-        y: arc * (offset / reach) ** 2,
-        rotate: rotation * PATTERN[i % PATTERN.length]
-      };
-    });
+    function computeSlots(cfg) {
+      const { spread } = cfg;
+      return images.map((_, i) => {
+        // 3 Apps fan layout: index 0 (Nexren) front & center, index 1 (StreaX) left, index 2 (Arc) right
+        if (count === 3) {
+          if (i === 0) return { x: 0, y: 0, rotate: 0 };
+          if (i === 1) return { x: -spread, y: arc, rotate: -rotation };
+          if (i === 2) return { x: spread, y: arc, rotate: rotation };
+        }
+        const offset = i - middle;
+        return {
+          x: offset * spread,
+          y: arc * (offset / reach) ** 2,
+          rotate: rotation * PATTERN[i % PATTERN.length]
+        };
+      });
+    }
+
+    let slots = computeSlots(currentConfig);
 
     const cardElements = [];
     images.forEach((app, i) => {
@@ -2014,7 +2068,7 @@ void main() {
       card.className = 'bounce-cards__card bounce-cards__card--clickable';
       card.setAttribute('role', 'button');
       card.setAttribute('tabindex', '0');
-      card.setAttribute('aria-label', app.name);
+      card.setAttribute('aria-label', `${app.name} - ${app.category}`);
       // Nexren (index 0) has highest resting z-index so it's always in front
       const restingZ = i === 0 ? 10 : (i === 1 ? 5 : 4);
       card.style.zIndex = String(restingZ);
@@ -2025,11 +2079,60 @@ void main() {
       img.draggable = false;
       card.appendChild(img);
 
+      card.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          if (state.hovered !== i) {
+            setActive(i);
+          } else {
+            onCardClick?.(i);
+          }
+        }
+      });
+
       root.appendChild(card);
       cardElements.push(card);
     });
 
     container.appendChild(root);
+
+    // Indicators / Dots for Carousel Navigation
+    const indicators = document.createElement('div');
+    indicators.className = 'bounce-cards-indicators';
+    indicators.setAttribute('role', 'tablist');
+    indicators.setAttribute('aria-label', 'Apps showcase navigation');
+
+    // Physical left-to-right order: 1 (StreaX), 0 (Nexren), 2 (Arc)
+    const dotOrder = [1, 0, 2];
+    const dotElements = [];
+
+    dotOrder.forEach(appIdx => {
+      const app = images[appIdx];
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.className = 'bounce-cards-dot';
+      dot.setAttribute('role', 'tab');
+      dot.setAttribute('aria-label', `Select ${app?.name || 'app'}`);
+      dot.addEventListener('click', e => {
+        e.stopPropagation();
+        setActive(appIdx);
+        if (bodies[appIdx]) bodies[appIdx].vs -= 2.0;
+        wake();
+      });
+      indicators.appendChild(dot);
+      dotElements.push({ appIdx, dot });
+    });
+
+    container.appendChild(indicators);
+
+    function updateIndicators(activeIdx) {
+      dotElements.forEach(({ appIdx, dot }) => {
+        const isActive = (activeIdx === appIdx) || (activeIdx === -1 && appIdx === 0);
+        dot.classList.toggle('bounce-cards-dot--active', isActive);
+        dot.setAttribute('aria-selected', String(isActive));
+      });
+    }
+    updateIndicators(-1);
 
     // Physics Engine matching React Bits component
     const bodies = [];
@@ -2068,7 +2171,7 @@ void main() {
       last = now;
       state.time += dt;
 
-      const hovered = enableHover ? state.hovered : -1;
+      const hovered = state.hovered;
       const popStiffness = 170;
       const popDamping = 2 * (1 - 0.85 * bounciness) * Math.sqrt(popStiffness);
       const moveStiffness = 210;
@@ -2091,14 +2194,14 @@ void main() {
 
         if (hovered >= 0 && appeared) {
           if (i === hovered) {
-            targetY = slot.y - cardSize * 0.05;
+            targetY = slot.y - currentConfig.cardSize * 0.05;
             targetRotate = 0;
-            targetScale = hoverScale;
+            targetScale = currentConfig.hoverScale;
           } else {
             const dir = slot.x !== slots[hovered].x
               ? Math.sign(slot.x - slots[hovered].x)
               : (i > hovered ? 1 : -1);
-            targetX = slot.x + dir * pushDistance;
+            targetX = slot.x + dir * currentConfig.pushDistance;
           }
         }
 
@@ -2142,52 +2245,182 @@ void main() {
       raf = requestAnimationFrame(frame);
     };
 
+    const setActive = (nextIndex, triggerCallback = true) => {
+      if (state.hovered === nextIndex) return;
+      state.hovered = nextIndex;
+      updateIndicators(nextIndex);
+      if (triggerCallback) {
+        onActiveChange?.(nextIndex);
+      }
+      wake();
+    };
+
     const pick = event => {
+      const cardEl = event.target?.closest?.('.bounce-cards__card');
+      if (cardEl) {
+        const found = cardElements.indexOf(cardEl);
+        if (found >= 0) return found;
+      }
+
       const rect = root.getBoundingClientRect();
       const px = event.clientX - rect.left - rect.width / 2;
       const py = event.clientY - rect.top - rect.height / 2;
       let best = -1;
       let distance = Infinity;
+
       slots.forEach((slot, i) => {
-        const gap = Math.abs(px - slot.x);
+        const cardX = bodies[i]?.x ?? slot.x;
+        const cardY = bodies[i]?.y ?? slot.y;
+        const gap = Math.hypot(px - cardX, py - cardY);
         if (gap < distance) {
           distance = gap;
           best = i;
         }
       });
+
       if (best < 0) return -1;
-      const slot = slots[best];
-      const half = cardSize / 2;
-      if (Math.abs(py - slot.y) > half + 16 || distance > half + 16) return -1;
+      const half = currentConfig.cardSize / 2;
+      if (distance > half + 24) return -1;
       return best;
     };
 
+    const isHoverDevice = () => window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    let lastTouchTime = 0;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStartTime = 0;
+    let isSwiping = false;
+
     root.addEventListener('pointermove', e => {
+      if (e.pointerType === 'touch' || !isHoverDevice()) return;
       const next = pick(e);
       if (next !== state.hovered) {
-        state.hovered = next;
-        wake();
+        setActive(next);
       }
     });
 
-    root.addEventListener('pointerleave', () => {
+    root.addEventListener('pointerleave', e => {
+      if (e.pointerType === 'touch' || !isHoverDevice()) return;
       if (state.hovered !== -1) {
-        state.hovered = -1;
-        wake();
+        setActive(-1);
       }
     });
 
+    // Touch Swipe Support
+    root.addEventListener('touchstart', e => {
+      lastTouchTime = performance.now();
+      if (e.touches.length !== 1) return;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      touchStartTime = performance.now();
+      isSwiping = false;
+    }, { passive: true });
+
+    root.addEventListener('touchmove', e => {
+      if (e.touches.length !== 1) return;
+      const dx = e.touches[0].clientX - touchStartX;
+      const dy = e.touches[0].clientY - touchStartY;
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 12) {
+        isSwiping = true;
+      }
+    }, { passive: true });
+
+    root.addEventListener('touchend', e => {
+      lastTouchTime = performance.now();
+      if (!isSwiping) return;
+
+      const touchEndX = e.changedTouches[0]?.clientX ?? touchStartX;
+      const dx = touchEndX - touchStartX;
+      const dt = performance.now() - touchStartTime;
+
+      if (Math.abs(dx) > 28 && dt < 450) {
+        const order = [1, 0, 2];
+        const currentIdx = state.hovered >= 0 ? state.hovered : 0;
+        let currentPos = order.indexOf(currentIdx);
+        if (currentPos < 0) currentPos = 1;
+
+        if (dx < 0) {
+          const nextPos = Math.min(order.length - 1, currentPos + 1);
+          const nextIdx = order[nextPos];
+          setActive(nextIdx);
+          if (bodies[nextIdx]) bodies[nextIdx].vs -= 2.0;
+        } else {
+          const prevPos = Math.max(0, currentPos - 1);
+          const prevIdx = order[prevPos];
+          setActive(prevIdx);
+          if (bodies[prevIdx]) bodies[prevIdx].vs -= 2.0;
+        }
+      }
+      setTimeout(() => { isSwiping = false; }, 50);
+    }, { passive: true });
+
+    // Click / Tap Handling
     root.addEventListener('click', e => {
+      if (isSwiping) {
+        isSwiping = false;
+        return;
+      }
+
+      const isTouch = (performance.now() - lastTouchTime < 600) ||
+                      e.pointerType === 'touch' ||
+                      !isHoverDevice();
+
       const index = pick(e);
-      if (index < 0) return;
+      if (index < 0) {
+        if (isTouch && state.hovered !== -1) {
+          setActive(-1);
+        }
+        return;
+      }
+
       const card = bodies[index];
       if (card) card.vs -= 2.2;
       wake();
-      onCardClick?.(index);
+
+      if (isTouch) {
+        // Mobile Touch interaction:
+        // First tap brings card into focus/active preview
+        // Second tap on the already focused card opens details modal
+        if (state.hovered !== index) {
+          setActive(index);
+          return;
+        }
+        onCardClick?.(index);
+      } else {
+        // Desktop with cursor: direct click opens details
+        onCardClick?.(index);
+      }
     });
 
+    // Window Resize Handler
+    let resizeTimer = 0;
+    const handleResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        currentConfig = getResponsiveConfig();
+        slots = computeSlots(currentConfig);
+        applyResponsiveStyles();
+        wake();
+      }, 100);
+    };
+    window.addEventListener('resize', handleResize);
+
     wake();
-    return { wake, resetAnimation: () => { state.time = 0; bodies.forEach(b => { b.scale = 0; b.born = 0; }); wake(); } };
+    return {
+      wake,
+      setActive,
+      resetAnimation: () => {
+        state.time = 0;
+        bodies.forEach(b => { b.scale = 0; b.born = 0; });
+        wake();
+      },
+      destroy: () => {
+        alive = false;
+        cancelAnimationFrame(raf);
+        window.removeEventListener('resize', handleResize);
+        container.innerHTML = '';
+      }
+    };
   }
 
   // App Modal Presentation
@@ -2250,7 +2483,6 @@ void main() {
     const link = data.apk_link ?? data.apkLink ?? data.download_url ?? data.apkUrl;
     if (link !== undefined) app.apk_link = link;
     if (data.version) app.version = data.version;
-    if (data.rating) app.rating = String(data.rating).startsWith('★') ? String(data.rating) : `★ ${data.rating}`;
     if (data.downloads !== undefined) {
       app.downloads_raw = Number(data.downloads) || 0;
       app.downloads = formatDownloads(app.downloads_raw);
@@ -2267,8 +2499,6 @@ void main() {
       if (dlEl) dlEl.textContent = app.downloads;
       const verEl = document.getElementById('modal-app-version');
       if (verEl) verEl.textContent = app.version;
-      const rateEl = document.getElementById('modal-app-rating');
-      if (rateEl) rateEl.textContent = app.rating;
       const previewWrapper = document.getElementById('modal-preview-wrapper');
       if (previewWrapper) {
         previewWrapper.style.display = app.preview === true ? 'block' : 'none';
@@ -2502,8 +2732,6 @@ void main() {
     if (nameEl) nameEl.textContent = app.name;
     const authorEl = document.getElementById('modal-app-author');
     if (authorEl) authorEl.textContent = app.author;
-    const ratingEl = document.getElementById('modal-app-rating');
-    if (ratingEl) ratingEl.textContent = app.rating;
     const descEl = document.getElementById('modal-app-desc');
     if (descEl) descEl.textContent = app.desc;
     const verEl = document.getElementById('modal-app-version');
@@ -2583,26 +2811,43 @@ void main() {
     if (e.key === 'Escape' && modal.hasAttribute('data-open')) closeAppModal();
   });
 
-  // Mount BounceCards
+  let activeShowcaseAppIndex = 0;
+  let showcaseSpecularBtn = null;
+
+  function updateShowcaseButton(appIndex) {
+    if (!showcaseSpecularBtn) return;
+    const labelSpan = showcaseSpecularBtn.button?.querySelector('.specular-button__label');
+    if (!labelSpan) return;
+
+    const actualIdx = (appIndex >= 0 && appIndex < demoApps.length) ? appIndex : 0;
+    activeShowcaseAppIndex = actualIdx;
+    const app = demoApps[actualIdx];
+
+    if (actualIdx === 0) {
+      const downloadIconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18" style="vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>`;
+      labelSpan.innerHTML = `${downloadIconSvg}<span>Download Nexren</span>`;
+    } else {
+      const infoIconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18" style="vertical-align: middle;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`;
+      labelSpan.innerHTML = `${infoIconSvg}<span>View ${app?.name || 'App'}</span>`;
+    }
+    showcaseSpecularBtn.wake();
+  }
+
+  // Mount BounceCards with responsive sizing & mobile touch support
   const bounceController = createBounceCards(mount, {
     images: demoApps,
-    containerWidth: Math.min(window.innerWidth - 40, 520),
-    containerHeight: 290,
-    cardSize: 230,
-    spread: 130,
     rotation: 8,
     arc: 10,
     bounciness: 0.65,
-    pushDistance: 150,
-    hoverScale: 1.08,
-    onCardClick: showAppDetails
+    onCardClick: showAppDetails,
+    onActiveChange: updateShowcaseButton
   });
 
-  // Mount Direct "Download Nexren" SpecularButton below BounceCards
+  // Mount Direct SpecularButton below BounceCards
   const specularMount = document.getElementById('specular-btn-mount');
   if (specularMount && typeof window.createSpecularButton === 'function') {
     const downloadIconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18" style="vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>`;
-    window.createSpecularButton(specularMount, {
+    showcaseSpecularBtn = window.createSpecularButton(specularMount, {
       label: `${downloadIconSvg}<span>Download Nexren</span>`,
       size: 'lg',
       radius: 18,
@@ -2621,7 +2866,7 @@ void main() {
       followMouse: true,
       proximity: 250,
       onClick: () => {
-        showAppDetails(0); // Opens Nexren app details modal directly
+        showAppDetails(activeShowcaseAppIndex);
       }
     });
   }
