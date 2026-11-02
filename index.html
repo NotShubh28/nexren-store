@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexren Store</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tektur:wght@400..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <!-- GSAP CDN for smooth staggered animations -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+</head>
+<body>
+  <!-- Fullscreen Animated Gradient ASCII Background -->
+  <div id="bg-container" class="gradient-ascii-container">
+    <canvas id="bg-canvas" class="gradient-ascii-canvas" aria-hidden="true"></canvas>
+  </div>
+
+  <!-- Staggered Menu Component Container -->
+  <div id="staggered-menu-mount"></div>
+
+  <!-- Apps Showcase View - Default Home Screen -->
+  <main id="apps-showcase" class="apps-showcase" style="display: flex;">
+    <!-- BounceCards Mount Container -->
+    <div id="bounce-cards-mount" class="bounce-cards-container"></div>
+    <!-- Direct Download Nexren Button Mount -->
+    <div id="specular-btn-mount" class="specular-btn-container"></div>
+  </main>
+
+  <!-- App Detail Modal -->
+  <div id="app-detail-modal" class="app-modal" aria-hidden="true">
+    <div class="app-modal-backdrop"></div>
+    <div class="app-modal-card">
+      <div class="app-modal-top-header">
+        <div class="app-modal-title-group">
+          <div class="app-modal-mini-icon">
+            <img id="modal-app-mini-icon" src="" alt="App Icon" />
+          </div>
+          <h2 id="modal-app-name" class="app-modal-name">App Name</h2>
+        </div>
+        <div class="app-modal-header-actions">
+          <div class="app-modal-rating" id="modal-app-rating">★ 4.9</div>
+          <button id="app-modal-close" class="app-modal-close" aria-label="Close dialog">×</button>
+        </div>
+      </div>
+      <div class="app-modal-body">
+        <p id="modal-app-desc" class="app-modal-desc">Detailed description of the application.</p>
+        
+        <div class="app-modal-specs">
+          <div class="spec-item"><span class="spec-label">Version</span><span class="spec-val" id="modal-app-version">v1.2.0</span></div>
+          <div class="spec-item"><span class="spec-label">Size</span><span class="spec-val" id="modal-app-size">42 MB</span></div>
+          <div class="spec-item"><span class="spec-label">Downloads</span><span class="spec-val" id="modal-app-downloads">12.5k</span></div>
+        </div>
+
+        <div class="app-modal-actions" id="modal-install-btn-mount"></div>
+
+        <!-- Screenshots Collapsible Preview Section -->
+        <div id="modal-preview-wrapper" class="app-modal-preview-wrapper" style="display: none;">
+          <button id="modal-preview-toggle-btn" class="modal-preview-toggle-btn" type="button" aria-expanded="false">
+            <div class="preview-btn-left">
+              <svg class="preview-btn-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+              <span class="preview-btn-text">Screenshots</span>
+            </div>
+            <div class="preview-btn-right">
+              <span class="preview-btn-badge" id="preview-toggle-badge">Expand</span>
+              <svg class="preview-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </div>
+          </button>
+          
+          <div id="modal-preview-collapse" class="modal-preview-collapse" aria-hidden="true">
+            <div id="modal-carousel-mount" class="modal-carousel-mount"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contact Modal Overlay with SpotlightCard -->
+  <div id="contact-modal" class="contact-modal" aria-hidden="true">
+    <div class="contact-modal-backdrop"></div>
+    <div class="contact-modal-content">
+      <div id="contact-spotlight-card" class="spotlight-card sc-profile-card">
+        <span class="spotlight-card__light" aria-hidden="true"></span>
+        <span class="spotlight-card__grain" aria-hidden="true"></span>
+        <span class="spotlight-card__border" aria-hidden="true"></span>
+        <span class="spotlight-card__edge" aria-hidden="true"></span>
+
+        <!-- Card Content Matching Image -->
+        <div class="sc-header">
+          <div class="sc-pfp">
+            <img src="pfp.png" alt="Shobhit Pandey" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;" />
+          </div>
+          <button id="contact-close-btn" class="sc-share-btn" aria-label="Close" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="sc-identity-row">
+          <div class="sc-identity-text">
+            <h3 class="sc-name">Shobhit Pandey</h3>
+            <p class="sc-role">Developer</p>
+          </div>
+          <div class="sc-stat-item">
+            <div class="sc-stat-val">★ 4.5</div>
+            <div class="sc-stat-lbl">Rating</div>
+          </div>
+        </div>
+
+        <button id="contact-support-btn" class="sc-touch-btn" type="button">Support</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Downloads Modal with AnimatedList Component -->
+  <div id="downloads-modal" class="downloads-modal" aria-hidden="true">
+    <div class="downloads-modal-backdrop"></div>
+    <div class="downloads-modal-card">
+      <div class="downloads-modal-header">
+        <div class="downloads-modal-title-row">
+          <div class="downloads-modal-icon-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="downloads-modal-title">Downloads</h3>
+            <p class="downloads-modal-subtitle">Installed packages & updates</p>
+          </div>
+        </div>
+        <button id="downloads-modal-close" class="downloads-modal-close" aria-label="Close dialog">×</button>
+      </div>
+      <div id="downloads-list-mount" class="downloads-list-mount"></div>
+    </div>
+  </div>
+
+  <!-- App Dock Container -->
+  <div id="dock-container" class="dock-wrapper"></div>
+
+  <script src="flying-button.js"></script>
+  <script src="specular-button.js"></script>
+  <script src="depth-carousel.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
