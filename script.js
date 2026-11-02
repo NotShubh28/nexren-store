@@ -3438,283 +3438,169 @@ void main() {
   });
 
   // ========================================================
-  // PulseHeart Component - React Bits + Firebase RTDB
+  // User Feedback / Complaint / Feature Request System
   // ========================================================
-  (function initTopNavPulseHeart() {
-    const mount = document.getElementById('top-nav-heart-mount');
-    if (!mount) return;
+  (function initReportFeedbackModal() {
+    const reportBtn = document.getElementById('top-nav-report-btn');
+    const modal = document.getElementById('report-modal');
+    const backdrop = document.getElementById('report-modal-backdrop');
+    const closeBtn = document.getElementById('report-modal-close');
+    const form = document.getElementById('report-form');
+    const mount = document.getElementById('report-specular-mount');
+    const statusEl = document.getElementById('report-form-status');
 
-    const FIREBASE_LIKES_URL = 'https://nexren-5f350-default-rtdb.firebaseio.com/site_likes.json';
-    const STORAGE_KEY = 'nexren_site_liked';
+    if (!modal) return;
 
-    let liked = localStorage.getItem(STORAGE_KEY) === 'true';
-    let totalCount = 104; // default / initial count
-    let rafId = 0;
-    let rollTimer = 0;
-    let viaPointer = false;
+    const FIREBASE_REPORTS_URL = 'https://nexren-5f350-default-rtdb.firebaseio.com/reports.json';
 
-    const cfg = {
-      duration: 560,
-      dotSize: 0.3,
-      overshoot: 1.7,
-      beat: 3,
-      rollDuration: 350
-    };
+    let specularBtnInstance = null;
+    let isSubmitting = false;
 
-    const OUT = 0.4;
-    const back = (k, c) => {
-      const u = k - 1;
-      return 1 + (c + 1) * u ** 3 + c * u ** 2;
-    };
-    const swellOf = (t, c) =>
-      t <= 0 ? 0 : t < OUT ? 1 - (1 - t / OUT) ** 3 : 1 - back((t - OUT) / (1 - OUT), c);
-    const format = n => new Intl.NumberFormat().format(Math.max(0, n));
-    const reducedMotion = () =>
-      typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-
-    // Mount the PulseHeart button DOM
-    mount.innerHTML = `
-      <button
-        type="button"
-        id="pulse-heart-btn"
-        class="pulse-heart"
-        aria-pressed="${liked}"
-        aria-label="Heart Nexren, ${format(totalCount)} likes"
-        data-liked="${liked}"
-      >
-        <span class="pulse-heart__pill">
-          <span class="pulse-heart__heart" aria-hidden="true">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <g class="pulse-heart__glyph">
-                <path
-                  d="M19.4626 3.99415C16.7809 2.34923 14.4404 3.01211 13.0344 4.06801C12.4578 4.50096 12.1696 4.71743 12 4.71743C11.8304 4.71743 11.5422 4.50096 10.9656 4.06801C9.55962 3.01211 7.21909 2.34923 4.53744 3.99415C1.01807 6.15294 0.221721 13.2749 8.33953 19.2834C9.88572 20.4278 10.6588 21 12 21C13.3412 21 14.1143 20.4278 15.6605 19.2834C23.7783 13.2749 22.9819 6.15294 19.4626 3.99415Z"
-                  vector-effect="non-scaling-stroke"
-                />
-              </g>
-            </svg>
-          </span>
-          <span class="pulse-heart__count" aria-hidden="true"></span>
-          <span class="pulse-heart__sr">Heart Nexren, ${format(totalCount)}</span>
-        </span>
-      </button>
-    `;
-
-    const btn = mount.querySelector('#pulse-heart-btn');
-    const pill = btn.querySelector('.pulse-heart__pill');
-    const heart = btn.querySelector('.pulse-heart__heart');
-    const glyph = btn.querySelector('.pulse-heart__glyph');
-    const countEl = btn.querySelector('.pulse-heart__count');
-    const srEl = btn.querySelector('.pulse-heart__sr');
-
-    function updateCountDisplay(from, to, isRolling, up) {
-      if (!isRolling) {
-        const text = format(to);
-        countEl.innerHTML = [...text].map(ch => `<span>${ch}</span>`).join('');
-        srEl.textContent = `Heart Nexren, ${text}`;
-        btn.setAttribute('aria-label', `Heart Nexren, ${text} likes`);
-        return;
-      }
-      const a = format(from);
-      const b = format(to);
-      const changed = a.length === b.length ? [...b].flatMap((ch, i) => (ch !== a[i] ? [i] : [])) : [];
-      const at = changed.length === 1 ? changed[0] : -1;
-
-      if (at === -1) {
-        const top = up ? a : b;
-        const bottom = up ? b : a;
-        countEl.innerHTML = `
-          <span class="pulse-heart__slot">
-            <span class="pulse-heart__roll">
-              <span>${top}</span>
-              <span>${bottom}</span>
-            </span>
-          </span>
-        `;
-      } else {
-        const cells = [...b].map((ch, i) => {
-          if (i === at) {
-            const top = up ? a[i] : ch;
-            const bottom = up ? ch : a[i];
-            return `
-              <span class="pulse-heart__slot">
-                <span class="pulse-heart__roll">
-                  <span>${top}</span>
-                  <span>${bottom}</span>
-                </span>
-              </span>
-            `;
-          }
-          return `<span>${ch}</span>`;
-        });
-        countEl.innerHTML = cells.join('');
-      }
-
-      const rollEl = countEl.querySelector('.pulse-heart__roll');
-      if (rollEl) {
-        rollEl.style.transition = 'none';
-        rollEl.style.transform = `translateY(${up ? '0' : '-1em'})`;
-        rollEl.getBoundingClientRect();
-        rollEl.style.transition = '';
-        rollEl.style.transform = `translateY(${up ? '-1em' : '0'})`;
-      }
-
-      clearTimeout(rollTimer);
-      rollTimer = setTimeout(() => {
-        updateCountDisplay(to, to, false, up);
-      }, cfg.rollDuration);
+    // Create SpecularButton with glassmorphic WebGL refraction and light reflections
+    if (mount && typeof window.createSpecularButton === 'function') {
+      specularBtnInstance = window.createSpecularButton(mount, {
+        label: `
+          <span>Send to Developer</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" style="vertical-align: middle;">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        `,
+        size: 'md',
+        radius: 14,
+        tint: '#38bdf8',
+        tintOpacity: 0.08,
+        blur: 10,
+        textColor: '#f4f4f5',
+        lineColor: '#38bdf8',
+        glow: 1,
+        speed: 0.35,
+        type: 'submit',
+        className: 'report-specular-btn'
+      });
     }
 
-    // Initial render of numbers
-    updateCountDisplay(totalCount, totalCount, false, false);
-
-    function startRoll(from, to) {
-      if (from === to) return;
-      updateCountDisplay(from, to, true, to > from);
+    function openModal() {
+      modal.setAttribute('data-open', '');
+      modal.setAttribute('aria-hidden', 'false');
+      // Wake SpecularButton WebGL shaders
+      specularBtnInstance?.wake?.();
+      setTimeout(() => {
+        document.getElementById('report-subject')?.focus();
+      }, 100);
     }
 
-    function runAnimation(nextLiked, nextCount) {
-      btn.dataset.running = '';
-      let swapped = false;
-      let prev = 0;
-      const t0 = performance.now();
+    function closeModal() {
+      modal.removeAttribute('data-open');
+      modal.setAttribute('aria-hidden', 'true');
+    }
 
-      const tick = now => {
-        const { duration: D, dotSize: dot, overshoot: c, beat: B } = cfg;
-        const t = Math.min(1, (now - t0) / D);
-        const step = prev ? now - prev : 1000 / 60;
-        prev = now;
-        const s = swellOf(t, c);
-        const k = 1 - (1 - dot) * s;
+    reportBtn?.addEventListener('click', openModal);
+    closeBtn?.addEventListener('click', closeModal);
+    backdrop?.addEventListener('click', closeModal);
 
-        if (glyph) {
-          glyph.setAttribute('transform', `translate(12 12) scale(${k}) translate(-12 -12)`);
-        } else {
-          heart.style.transform = `scale(${k})`;
-        }
-        pill.style.transform = `scale(${1 - (B / 100) * s})`;
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && modal.hasAttribute('data-open')) {
+        closeModal();
+      }
+    });
 
-        if (!swapped && t + step / 2 / D >= OUT) {
-          swapped = true;
-          btn.dataset.liked = String(nextLiked);
-          btn.setAttribute('aria-pressed', String(nextLiked));
-          startRoll(totalCount, nextCount);
-          totalCount = nextCount;
-        }
+    form?.addEventListener('submit', async e => {
+      e.preventDefault();
+      if (isSubmitting) return;
 
-        if (t < 1) {
-          rafId = requestAnimationFrame(tick);
-          return;
-        }
+      const typeEl = form.querySelector('input[name="reportType"]:checked');
+      const subjectEl = document.getElementById('report-subject');
+      const descEl = document.getElementById('report-description');
+      const contactEl = document.getElementById('report-contact');
 
-        rafId = 0;
-        if (glyph) glyph.removeAttribute('transform');
-        heart.style.transform = '';
-        pill.style.transform = '';
-        delete btn.dataset.running;
+      const reportType = typeEl?.value || 'Bug / Issue';
+      const subject = subjectEl?.value.trim() || '';
+      const description = descEl?.value.trim() || '';
+      const contact = contactEl?.value.trim() || '';
+
+      if (!subject || !description) return;
+
+      const payload = {
+        type: reportType,
+        subject: subject,
+        description: description,
+        contact: contact,
+        timestamp: Date.now(),
+        date: new Date().toISOString(),
+        userAgent: navigator.userAgent || 'Unknown',
+        screen: `${window.innerWidth}x${window.innerHeight}`
       };
 
-      rafId = requestAnimationFrame(tick);
-    }
-
-    // Pointer down/up press feedback
-    btn.addEventListener('pointerdown', e => {
-      if (e.button !== 0) return;
-      viaPointer = true;
-      if (!reducedMotion()) btn.dataset.pressed = '';
-    });
-
-    const clearPressed = () => {
-      delete btn.dataset.pressed;
-    };
-    btn.addEventListener('pointerup', clearPressed);
-    btn.addEventListener('pointerleave', clearPressed);
-    btn.addEventListener('pointercancel', () => {
-      viaPointer = false;
-      clearPressed();
-    });
-    btn.addEventListener('keydown', () => {
-      viaPointer = false;
-    });
-
-    btn.addEventListener('click', async e => {
-      if (rafId) return;
-      const pointer = viaPointer && e.detail !== 0;
-      viaPointer = false;
-
-      const nextLiked = !liked;
-      const nextCount = Math.max(0, totalCount + (nextLiked ? 1 : -1));
-
-      liked = nextLiked;
-      localStorage.setItem(STORAGE_KEY, liked ? 'true' : 'false');
-
-      if (pointer && !reducedMotion()) {
-        runAnimation(nextLiked, nextCount);
-      } else {
-        btn.dataset.liked = String(nextLiked);
-        btn.setAttribute('aria-pressed', String(nextLiked));
-        startRoll(totalCount, nextCount);
-        totalCount = nextCount;
+      isSubmitting = true;
+      if (specularBtnInstance?.button) {
+        specularBtnInstance.button.disabled = true;
+        const lbl = specularBtnInstance.button.querySelector('.specular-button__label');
+        if (lbl) lbl.innerHTML = '<span>Submitting...</span>';
+      }
+      if (statusEl) {
+        statusEl.className = 'report-form-status';
+        statusEl.textContent = '';
       }
 
-      // Persist to Firebase Realtime Database
       try {
-        const getRes = await fetch(FIREBASE_LIKES_URL);
-        const val = await getRes.json();
-        const currentRemote = typeof val === 'number' ? val : totalCount;
-        const updatedRemote = Math.max(0, currentRemote + (nextLiked ? 1 : -1));
-        await fetch(FIREBASE_LIKES_URL, {
-          method: 'PUT',
+        const res = await fetch(FIREBASE_REPORTS_URL, {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedRemote)
+          body: JSON.stringify(payload)
         });
-      } catch (err) {
-        console.warn('Firebase like persistence error:', err);
-      }
-    });
 
-    // Fetch initial likes from Firebase
-    async function fetchLiveLikes() {
-      try {
-        const res = await fetch(FIREBASE_LIKES_URL);
-        const count = await res.json();
-        if (typeof count === 'number') {
-          const from = totalCount;
-          totalCount = count;
-          if (!rafId) {
-            updateCountDisplay(from, totalCount, false, false);
+        if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+
+        // Success state
+        if (statusEl) {
+          statusEl.className = 'report-form-status success';
+          statusEl.textContent = '✓ Received! Thank you for your feedback.';
+        }
+        if (specularBtnInstance?.button) {
+          const lbl = specularBtnInstance.button.querySelector('.specular-button__label');
+          if (lbl) lbl.innerHTML = '<span>Sent!</span>';
+        }
+
+        form.reset();
+
+        setTimeout(() => {
+          closeModal();
+          isSubmitting = false;
+          if (specularBtnInstance?.button) {
+            specularBtnInstance.button.disabled = false;
+            const lbl = specularBtnInstance.button.querySelector('.specular-button__label');
+            if (lbl) {
+              lbl.innerHTML = `
+                <span>Send to Developer</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" style="vertical-align: middle;">
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+              `;
+            }
+          }
+          if (statusEl) {
+            statusEl.className = 'report-form-status';
+            statusEl.textContent = '';
+          }
+        }, 1600);
+      } catch (err) {
+        console.error('Failed to submit report to Firebase:', err);
+        isSubmitting = false;
+        if (statusEl) {
+          statusEl.className = 'report-form-status error';
+          statusEl.textContent = 'Could not send. Please try again.';
+        }
+        if (specularBtnInstance?.button) {
+          specularBtnInstance.button.disabled = false;
+          const lbl = specularBtnInstance.button.querySelector('.specular-button__label');
+          if (lbl) {
+            lbl.innerHTML = '<span>Retry</span>';
           }
         }
-      } catch (err) {
-        console.warn('Initial likes fetch error:', err);
       }
-    }
-
-    // Live Realtime SSE stream for likes
-    function initLiveLikesStream() {
-      if (typeof EventSource === 'undefined') return;
-      try {
-        const es = new EventSource(FIREBASE_LIKES_URL);
-        es.addEventListener('put', e => {
-          try {
-            const payload = JSON.parse(e.data);
-            if (!payload) return;
-            const remoteCount = payload.data !== undefined ? payload.data : payload;
-            if (typeof remoteCount === 'number' && remoteCount !== totalCount && !rafId) {
-              const from = totalCount;
-              totalCount = remoteCount;
-              startRoll(from, totalCount);
-            }
-          } catch (err) {
-            console.warn('Firebase SSE likes parse error:', err);
-          }
-        });
-      } catch (err) {
-        console.warn('Firebase EventSource error for likes:', err);
-      }
-    }
-
-    fetchLiveLikes();
-    initLiveLikesStream();
+    });
   })();
 })();
 
