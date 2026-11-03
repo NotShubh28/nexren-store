@@ -65,53 +65,53 @@
   <!-- App Detail Modal -->
   <div id="app-detail-modal" class="app-modal" aria-hidden="true">
     <div class="app-modal-backdrop"></div>
-    <div class="app-modal-card">
-      <div class="app-modal-top-header">
-        <div class="app-modal-title-group">
+    <div class="app-modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-app-name">
+      <span class="app-modal-grabber" aria-hidden="true"></span>
+      <button id="app-modal-close" class="app-modal-close" aria-label="Close dialog" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="14" height="14" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+      <div class="app-modal-scroll">
+        <header class="app-modal-hero">
           <div class="app-modal-mini-icon">
-            <img id="modal-app-mini-icon" src="" alt="App Icon" />
+            <img id="modal-app-mini-icon" src="" alt="" />
           </div>
-          <h2 id="modal-app-name" class="app-modal-name">App Name</h2>
-        </div>
-        <div class="app-modal-header-actions">
-          <button id="app-modal-close" class="app-modal-close" aria-label="Close dialog">×</button>
-        </div>
-      </div>
-      <div class="app-modal-body">
-        <p id="modal-app-desc" class="app-modal-desc">Detailed description of the application.</p>
-        
+          <div class="app-modal-heading">
+            <h2 id="modal-app-name" class="app-modal-name">App Name</h2>
+            <p id="modal-app-category" class="app-modal-category"></p>
+            <p id="modal-app-author" class="app-modal-author"></p>
+          </div>
+        </header>
+
         <div class="app-modal-specs">
-          <div class="spec-item"><span class="spec-label">Version</span><span class="spec-val" id="modal-app-version">v1.2.0</span></div>
-          <div class="spec-item"><span class="spec-label">Size</span><span class="spec-val" id="modal-app-size">42 MB</span></div>
-          <div class="spec-item"><span class="spec-label">Downloads</span><span class="spec-val" id="modal-app-downloads">12.5k</span></div>
+          <div class="spec-item"><span class="spec-label">Version</span><span class="spec-val" id="modal-app-version">v1.0.0</span></div>
+          <div class="spec-item"><span class="spec-label">Size</span><span class="spec-val" id="modal-app-size">34 MB</span></div>
+          <div class="spec-item"><span class="spec-label">Downloads</span><span class="spec-val" id="modal-app-downloads">0</span></div>
         </div>
 
-        <div class="app-modal-actions" id="modal-install-btn-mount"></div>
+        <p id="modal-app-desc" class="app-modal-desc">Detailed description of the application.</p>
 
         <!-- Screenshots Collapsible Preview Section -->
         <div id="modal-preview-wrapper" class="app-modal-preview-wrapper" style="display: none;">
-          <button id="modal-preview-toggle-btn" class="modal-preview-toggle-btn" type="button" aria-expanded="false">
-            <div class="preview-btn-left">
-              <svg class="preview-btn-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/>
-                <polyline points="21 15 16 10 5 21"/>
-              </svg>
-              <span class="preview-btn-text">Screenshots</span>
-            </div>
-            <div class="preview-btn-right">
-              <span class="preview-btn-badge" id="preview-toggle-badge">Expand</span>
-              <svg class="preview-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2">
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
-            </div>
+          <button id="modal-preview-toggle-btn" class="modal-preview-toggle-btn" type="button" aria-expanded="false" aria-controls="modal-preview-collapse">
+            <span class="preview-btn-text">Screenshots</span>
+            <svg class="preview-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
           </button>
-          
-          <div id="modal-preview-collapse" class="modal-preview-collapse" aria-hidden="true">
+
+          <div id="modal-preview-collapse" class="modal-preview-collapse" aria-hidden="true" inert>
             <div id="modal-carousel-mount" class="modal-carousel-mount"></div>
           </div>
         </div>
       </div>
+
+      <footer class="app-modal-footer">
+        <div class="app-modal-actions" id="modal-install-btn-mount"></div>
+        <p id="modal-install-note" class="app-modal-note" aria-live="polite"></p>
+      </footer>
     </div>
   </div>
 
@@ -162,7 +162,7 @@
           </div>
           <div>
             <h3 class="downloads-modal-title">Downloads</h3>
-            <p class="downloads-modal-subtitle">Installed packages & updates</p>
+            <p class="downloads-modal-subtitle">Apps you have downloaded</p>
           </div>
         </div>
         <button id="downloads-modal-close" class="downloads-modal-close" aria-label="Close dialog">×</button>

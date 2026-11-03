@@ -2429,31 +2429,56 @@ void main() {
   const modalInstallMount = document.getElementById('modal-install-btn-mount');
   let modalSpecularBtn = null;
 
+  const MODAL_ICONS = {
+    download: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>`,
+    spinner: `<svg class="install-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" width="18" height="18" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>`,
+    check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>`
+  };
+
+  let downloadingIndex = null;
+
+  function appHasApk(app) {
+    return !!app && typeof app.apk_link === 'string' && app.apk_link.trim().length > 0;
+  }
+
   function updateModalInstallButtonState() {
     if (!modalSpecularBtn) return;
-    const isInstalled = installedApps.has(currentActiveAppIndex);
-    const labelSpan = modalSpecularBtn.button.querySelector('.specular-button__label');
-    if (!labelSpan) return;
+    const app = demoApps[currentActiveAppIndex];
+    const btn = modalSpecularBtn.button;
+    const labelSpan = btn.querySelector('.specular-button__label');
+    const noteEl = document.getElementById('modal-install-note');
+    if (!app || !labelSpan) return;
 
-    if (isInstalled) {
-      modalSpecularBtn.button.classList.add('installed');
-      labelSpan.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.4" width="18" height="18" style="vertical-align: middle;">
-          <polyline points="20 6 9 17 4 12"/>
-        </svg>
-        <span>Installed</span>
-      `;
+    const available = appHasApk(app);
+    const busy = downloadingIndex === currentActiveAppIndex;
+    const done = installedApps.has(currentActiveAppIndex);
+
+    btn.disabled = !available;
+    btn.setAttribute('aria-busy', String(busy));
+
+    let label;
+    let note = '';
+    let tone = '';
+    if (!available) {
+      label = `<span>Coming soon</span>`;
+      note = `${app.name} is not available to download yet.`;
+    } else if (busy) {
+      label = `${MODAL_ICONS.spinner}<span>Starting download</span>`;
+    } else if (done) {
+      label = `${MODAL_ICONS.download}<span>Download again</span>`;
+      note = `${MODAL_ICONS.check}<span>Download started. Open the APK to install.</span>`;
+      tone = 'success';
     } else {
-      modalSpecularBtn.button.classList.remove('installed');
-      labelSpan.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18" style="vertical-align: middle;">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" x2="12" y1="15" y2="3"/>
-        </svg>
-        <span>Install App</span>
-      `;
+      label = `${MODAL_ICONS.download}<span>Download APK</span>`;
+      note = `<span>For Android devices</span>`;
     }
+
+    labelSpan.innerHTML = label;
+    if (noteEl) {
+      noteEl.className = `app-modal-note${tone ? ` app-modal-note--${tone}` : ''}`;
+      noteEl.innerHTML = note;
+    }
+    modalSpecularBtn.wake();
   }
 
   // ========================================================
@@ -2503,6 +2528,7 @@ void main() {
       if (previewWrapper) {
         previewWrapper.style.display = app.preview === true ? 'block' : 'none';
       }
+      updateModalInstallButtonState();
     }
   }
 
@@ -2558,6 +2584,18 @@ void main() {
     }
   }
 
+  function startApkDownload(app) {
+    if (!appHasApk(app)) return;
+    const a = document.createElement('a');
+    a.href = app.apk_link;
+    a.setAttribute('download', `${app.name}.apk`);
+    a.setAttribute('target', '_blank');
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
   async function incrementAppDownload(appKey) {
     const app = demoApps.find(a => (a.key || a.name.toLowerCase()) === appKey.toLowerCase());
     if (!app) return;
@@ -2576,16 +2614,7 @@ void main() {
     }
 
     // 2. Trigger APK download if link is provided
-    if (app.apk_link && typeof app.apk_link === 'string' && app.apk_link.trim().length > 0) {
-      const a = document.createElement('a');
-      a.href = app.apk_link;
-      a.setAttribute('download', `${app.name}.apk`);
-      a.setAttribute('target', '_blank');
-      a.rel = 'noopener noreferrer';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
+    startApkDownload(app);
 
     // 3. Atomically persist to Firebase RTDB
     try {
@@ -2612,61 +2641,43 @@ void main() {
   initFirebaseRealtimeStream();
 
   function handleModalInstallClick() {
-    if (!installedApps.has(currentActiveAppIndex)) {
-      const app = demoApps[currentActiveAppIndex];
-      const labelSpan = modalSpecularBtn?.button.querySelector('.specular-button__label');
-      if (labelSpan) {
-        labelSpan.innerHTML = `
-          <svg class="install-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18" style="vertical-align: middle;">
-            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-          </svg>
-          <span>Downloading...</span>
-        `;
-      }
+    const idx = currentActiveAppIndex;
+    const app = demoApps[idx];
+    if (!appHasApk(app) || downloadingIndex !== null) return;
 
-      // Live increment in Firebase RTDB and initiate APK download
+    const firstDownload = !installedApps.has(idx);
+    downloadingIndex = idx;
+    updateModalInstallButtonState();
+
+    if (firstDownload) {
+      // Starts the APK download and records the count in Firebase RTDB
       incrementAppDownload(app.key || app.name.toLowerCase());
-
-      setTimeout(() => {
-        installedApps.add(currentActiveAppIndex);
-        updateModalInstallButtonState();
-        if (typeof renderDownloadsView === 'function') {
-          renderDownloadsView();
-        }
-        if (typeof updateDownloadsDockBadge === 'function') {
-          updateDownloadsDockBadge();
-        }
-      }, 700);
     } else {
-      const app = demoApps[currentActiveAppIndex];
-      if (app.apk_link && typeof app.apk_link === 'string' && app.apk_link.trim().length > 0) {
-        window.open(app.apk_link, '_blank');
-      } else {
-        alert(`Launching ${app.name}...`);
-      }
+      startApkDownload(app);
     }
+
+    setTimeout(() => {
+      downloadingIndex = null;
+      installedApps.add(idx);
+      updateModalInstallButtonState();
+      if (typeof renderDownloadsView === 'function') renderDownloadsView();
+      if (typeof updateDownloadsDockBadge === 'function') updateDownloadsDockBadge();
+    }, 900);
   }
 
   if (modalInstallMount && typeof window.createSpecularButton === 'function') {
     modalSpecularBtn = window.createSpecularButton(modalInstallMount, {
-      label: `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18" style="vertical-align: middle;">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" x2="12" y1="15" y2="3"/>
-        </svg>
-        <span>Install App</span>
-      `,
+      label: `${MODAL_ICONS.download}<span>Download APK</span>`,
       size: 'lg',
       radius: 16,
-      tint: '#ffffff',
-      tintOpacity: 0.05,
+      tint: '#38bdf8',
+      tintOpacity: 0.14,
       blur: 10,
-      textColor: '#f5f5f5',
-      lineColor: '#ffffff',
-      baseColor: '#525252',
+      textColor: '#f0f9ff',
+      lineColor: '#bae6fd',
+      baseColor: '#4a6a80',
       intensity: 1,
-      idleIntensity: 0.35,
+      idleIntensity: 0.4,
       shineSize: 10,
       shineFade: 34,
       thickness: 1.2,
@@ -2717,13 +2728,18 @@ void main() {
     }
   }
 
+  let modalReturnFocus = null;
+
   function showAppDetails(index) {
     const app = demoApps[index];
     if (!app) return;
     currentActiveAppIndex = index;
 
     const miniIcon = document.getElementById('modal-app-mini-icon');
-    if (miniIcon) miniIcon.src = app.img;
+    if (miniIcon) {
+      miniIcon.src = app.img;
+      miniIcon.alt = `${app.name} icon`;
+    }
     const bannerImg = document.getElementById('modal-app-img');
     if (bannerImg) bannerImg.src = app.img;
     const catEl = document.getElementById('modal-app-category');
@@ -2747,7 +2763,6 @@ void main() {
     const previewWrapper = document.getElementById('modal-preview-wrapper');
     const toggleBtn = document.getElementById('modal-preview-toggle-btn');
     const collapse = document.getElementById('modal-preview-collapse');
-    const badge = document.getElementById('preview-toggle-badge');
 
     const canPreview = app.preview === true;
     if (previewWrapper) {
@@ -2755,33 +2770,37 @@ void main() {
     }
 
     // Always reset collapse state to closed on opening an app modal
-    if (toggleBtn && collapse && badge) {
+    if (toggleBtn && collapse) {
       toggleBtn.setAttribute('aria-expanded', 'false');
       collapse.classList.remove('is-expanded');
       collapse.setAttribute('aria-hidden', 'true');
-      badge.textContent = 'Expand';
+      collapse.inert = true;
     }
 
+    const scrollEl = modal.querySelector('.app-modal-scroll');
+    if (scrollEl) scrollEl.scrollTop = 0;
+
+    modalReturnFocus = document.activeElement;
     modal.setAttribute('data-open', '');
     modal.setAttribute('aria-hidden', 'false');
 
     setTimeout(() => {
       modalSpecularBtn?.wake();
+      modalClose?.focus({ preventScroll: true });
     }, 60);
   }
 
   // Handle "Expand to see screenshots" toggle
   const previewToggleBtn = document.getElementById('modal-preview-toggle-btn');
   const previewCollapse = document.getElementById('modal-preview-collapse');
-  const previewBadge = document.getElementById('preview-toggle-badge');
 
   previewToggleBtn?.addEventListener('click', () => {
     const isExpanded = previewToggleBtn.getAttribute('aria-expanded') === 'true';
     const nextState = !isExpanded;
     previewToggleBtn.setAttribute('aria-expanded', String(nextState));
-    if (previewBadge) previewBadge.textContent = nextState ? 'Collapse' : 'Expand';
 
     if (nextState) {
+      if (previewCollapse) previewCollapse.inert = false;
       previewCollapse?.classList.add('is-expanded');
       previewCollapse?.setAttribute('aria-hidden', 'false');
       const app = demoApps[currentActiveAppIndex];
@@ -2797,13 +2816,37 @@ void main() {
     } else {
       previewCollapse?.classList.remove('is-expanded');
       previewCollapse?.setAttribute('aria-hidden', 'true');
+      if (previewCollapse) previewCollapse.inert = true;
     }
   });
 
   function closeAppModal() {
+    if (!modal.hasAttribute('data-open')) return;
     modal.removeAttribute('data-open');
     modal.setAttribute('aria-hidden', 'true');
+    if (modalReturnFocus && document.contains(modalReturnFocus)) {
+      modalReturnFocus.focus({ preventScroll: true });
+    }
+    modalReturnFocus = null;
   }
+
+  // Keep keyboard focus inside the open dialog
+  modal.addEventListener('keydown', e => {
+    if (e.key !== 'Tab') return;
+    const items = Array.from(modal.querySelectorAll('button, [tabindex="0"]')).filter(
+      el => !el.disabled && !el.closest('[inert]') && el.offsetParent !== null
+    );
+    if (!items.length) return;
+    const first = items[0];
+    const lastEl = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      lastEl.focus();
+    } else if (!e.shiftKey && document.activeElement === lastEl) {
+      e.preventDefault();
+      first.focus();
+    }
+  });
 
   modalClose?.addEventListener('click', closeAppModal);
   modalBackdrop?.addEventListener('click', closeAppModal);
@@ -3363,7 +3406,7 @@ void main() {
         image: app.img,
         title: `${app.name} ${app.version}`,
         description: app.category,
-        meta: 'Installed'
+        meta: 'Downloaded'
       };
     });
 
